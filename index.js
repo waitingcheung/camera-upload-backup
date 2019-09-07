@@ -1,5 +1,5 @@
 const path = require('path');
-const fs = require('fs-extra');
+const fs = require('fs');
 var moment = require('moment');
 
 var argv = require('minimist')(process.argv.slice(2));
@@ -11,24 +11,28 @@ if (!argv.src || !argv.out) {
 var src = path.resolve(process.cwd(), argv.src);
 var out = path.resolve(process.cwd(), argv.out);
 
-var files = fs.readdirSync(src);
-for (var i in files) {
-    var filename = files[i];
-    if (!isNaN(filename[0])) {
-        var basename = filename.slice(0, -4);
+fs.readdirSync(src).forEach(file => {
+    if (!isNaN(file[0])) {
+        var basename = file.slice(0, -4);
         var result = moment(basename, 'YYYY-MM-DD HH.mm.ss');
-        writeResultToFile(filename, result);
+        writeResultToFile(file, result);
     }
-}
+});
 
 function writeResultToFile(filename, result) {
     var year = result.format('YYYY');
     var month = result.format('MMM');
     var day = result.format('D');
     var dir = path.resolve(out, year, year + ' ' + month, year + ' ' + month + ' ' + day);
-    fs.ensureDirSync(dir);
+    
+    if (!fs.existsSync(dir)){
+    	fs.mkdirSync(dir, {recursive: true});
+	}
+
     var origin = path.resolve(src, filename);
     var dest = path.resolve(dir, filename);
     console.log('Copying ' + filename + ' to ' + dir);
-    fs.copySync(origin, dest);
+    fs.copyFile(origin, dest, (err) => {
+    	if (err) throw err;
+    })
 }
